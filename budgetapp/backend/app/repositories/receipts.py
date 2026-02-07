@@ -1,3 +1,5 @@
+"""Receipt repository for SQLite operations."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -7,6 +9,7 @@ from ..core.interfaces import IReceiptRepository
 
 
 class ReceiptRepository(IReceiptRepository):
+    """SQL access for receipt data."""
     def __init__(self, db: Database) -> None:
         self._db = db
 

@@ -1,3 +1,5 @@
+"""OCR and receipt parsing utilities."""
+
 from __future__ import annotations
 
 import re
@@ -10,6 +12,7 @@ import pytesseract
 
 
 class OcrService:
+    """Wrapper around Tesseract OCR."""
     def extract_text(self, image_path: Path) -> str:
         with Image.open(image_path) as image:
             return pytesseract.image_to_string(image)
@@ -23,6 +26,7 @@ class ReceiptParseResult:
 
 
 class ReceiptParser:
+    """Extracts key fields from OCR text using simple heuristics."""
     def parse(self, text: str) -> ReceiptParseResult:
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         vendor = lines[0] if lines else "Unknown Vendor"

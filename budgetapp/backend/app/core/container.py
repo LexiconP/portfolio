@@ -1,3 +1,5 @@
+"""Dependency container for wiring the app."""
+
 from __future__ import annotations
 
 from functools import cached_property
@@ -17,6 +19,7 @@ from ..services.receipts import ReceiptService
 
 
 class Container:
+    """Simple DI container to assemble services and repositories."""
     def __init__(self, config: AppConfig | None = None) -> None:
         self._config = config or AppConfig.from_environment()
 
@@ -58,6 +61,7 @@ class Container:
         return BudgetService(repository=self.budget_repository)
 
     def create_app(self) -> FastAPI:
+        # Build the FastAPI application and register middleware/routes.
         app = FastAPI(title="Receipt OCR Budget Reconciliation API")
 
         app.add_middleware(
@@ -70,6 +74,7 @@ class Container:
 
         @app.on_event("startup")
         def on_startup() -> None:
+            # Ensure directories and schema are ready before requests.
             self.config.ensure_directories()
             self.db.init()
 

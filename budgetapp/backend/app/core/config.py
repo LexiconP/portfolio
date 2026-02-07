@@ -1,3 +1,5 @@
+"""Application configuration and filesystem paths."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,6 +8,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class AppConfig:
+    """Resolved filesystem locations for data and static assets."""
     base_dir: Path
     data_dir: Path
     receipts_dir: Path
@@ -28,5 +31,6 @@ class AppConfig:
         )
 
     def ensure_directories(self) -> None:
+        # Ensure data directories exist for receipts and database files.
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.receipts_dir.mkdir(parents=True, exist_ok=True)

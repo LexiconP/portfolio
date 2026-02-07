@@ -1,3 +1,5 @@
+"""Receipt domain logic."""
+
 from __future__ import annotations
 
 import csv
@@ -11,6 +13,7 @@ from ..core.interfaces import IReceiptParser, IReceiptRepository, IOcrService
 
 
 class ReceiptService:
+    """Coordinates receipt storage, OCR, parsing, and persistence."""
     def __init__(
         self,
         repository: IReceiptRepository,
@@ -24,6 +27,7 @@ class ReceiptService:
         self._parser = parser
 
     def create_receipt(self, contents: bytes) -> dict[str, Any]:
+        # Save image, run OCR, parse fields, then persist.
         image_path = self._store_receipt_image(contents)
         ocr_text = self._ocr.extract_text(image_path)
         parsed = self._parser.parse(ocr_text)
@@ -53,6 +57,7 @@ class ReceiptService:
         return self._repository.get_receipt(receipt_id)
 
     def export_csv(self) -> io.StringIO:
+        # Build CSV from repository rows.
         rows = self._repository.export_rows()
 
         output = io.StringIO()
@@ -65,6 +70,7 @@ class ReceiptService:
         return output
 
     def _store_receipt_image(self, contents: bytes) -> Path:
+        # Generate a unique filename based on timestamp.
         timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
         image_path = self._config.receipts_dir / f"receipt_{timestamp}.png"
         image_path.write_bytes(contents)

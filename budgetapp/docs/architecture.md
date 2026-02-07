@@ -14,21 +14,20 @@
 
 ## Proposed Free Stack
 **Client**
-- Web app (PWA) for mobile & desktop
-- Framework: React + Vite (open source)
-- CSV export: client-side generation
-- Optional offline-first storage: IndexedDB
+- Simple HTML/CSS/JS UI served by the backend
+- CSV export via backend endpoint
+- Optional offline-first storage: IndexedDB (future)
 
 **Backend (Self‑Hosted, Free)**
 - API: FastAPI (Python)
 - OCR: Tesseract OCR (open source)
-- Data store: SQLite (single-user) or Postgres (multi-user)
+- Data store: SQLite (single-user)
 - Object storage: local filesystem (images)
-- Background jobs: built‑in FastAPI background tasks or Celery + Redis (optional)
+- Modular OOP layers: API → services → repositories → database
 
 **Deployment**
 - Local machine, Raspberry Pi, or free tier VM (if available)
-- Docker optional for portability
+- Docker Compose for portability
 
 ## High-Level Architecture
 ```
@@ -42,7 +41,7 @@
     |  -> Save image to /data/receipts
     |  -> OCR via Tesseract
     |  -> Parse fields (date, vendor, items, total)
-    |  -> Store in DB (Receipts, Items)
+    |  -> Store in DB (Receipts, Budgets)
     v
 [Budget Reconciliation]
     |  -> Match receipt items to budget categories
@@ -68,6 +67,10 @@
   - `POST /budgets` — update budgets
   - `GET /export` — CSV export (optional)
 
+### 2.1) API Modules
+- `app/api/routes.py` — route handlers and request models
+- `app/core/container.py` — dependency wiring
+
 ### 3) OCR Module (Tesseract)
 - Preprocessing with OpenCV (optional)
 - Confidence scores per field
@@ -79,9 +82,15 @@
 ### 5) Data Storage
 - SQLite (default)
 - Schema:
-  - `receipts(id, date, vendor, total, image_path)`
-  - `items(id, receipt_id, name, price, category)`
+    - `receipts(id, date, vendor, total, image_path, ocr_text, created_at)`
   - `budgets(id, category, monthly_limit, spent)`
+
+## Code Structure (OOP)
+- `app/core` — config, database, interfaces, container
+- `app/services` — receipt/budget business logic
+- `app/repositories` — SQL access
+- `app/api` — FastAPI routes and models
+- `app/static` — HTML/CSS/JS UI
 
 ## Data Flow
 1. User uploads receipt image.
@@ -100,6 +109,10 @@
 - Free OCR (Tesseract)
 - Free frameworks and libraries
 - Compute on local device or free-tier VM
+
+## Tests
+- Pytest-based unit tests for receipt flow.
+- Focus on storage, OCR integration, parsing, and repository inserts.
 
 ## MVP Scope
 - Upload receipt

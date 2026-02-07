@@ -1,3 +1,5 @@
+"""Budget domain logic."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -6,6 +8,7 @@ from ..core.interfaces import IBudgetRepository
 
 
 class BudgetService:
+    """Coordinates budget retrieval and updates."""
     def __init__(self, repository: IBudgetRepository) -> None:
         self._repository = repository
 

@@ -1,3 +1,4 @@
+// Simple UI logic for uploading receipts and managing budgets.
 const uploadForm = document.getElementById("upload-form");
 const receiptFile = document.getElementById("receipt-file");
 const uploadStatus = document.getElementById("upload-status");
@@ -7,6 +8,7 @@ const budgetForm = document.getElementById("budget-form");
 const budgetsList = document.getElementById("budgets-list");
 
 async function fetchReceipts() {
+  // Load receipts from the API and render them.
   const response = await fetch("/receipts");
   const receipts = await response.json();
   receiptsList.innerHTML = "";
@@ -27,6 +29,7 @@ async function fetchReceipts() {
 }
 
 async function fetchBudgets() {
+  // Load budgets from the API and render them.
   const response = await fetch("/budgets");
   const budgets = await response.json();
   budgetsList.innerHTML = "";
@@ -47,6 +50,7 @@ async function fetchBudgets() {
 }
 
 uploadForm.addEventListener("submit", async (event) => {
+  // Upload a receipt image.
   event.preventDefault();
   if (!receiptFile.files.length) {
     return;
@@ -77,10 +81,12 @@ uploadForm.addEventListener("submit", async (event) => {
 });
 
 refreshReceipts.addEventListener("click", () => {
+  // Manual refresh for receipts list.
   fetchReceipts();
 });
 
 budgetForm.addEventListener("submit", async (event) => {
+  // Submit a budget update.
   event.preventDefault();
 
   const category = document.getElementById("budget-category").value.trim();

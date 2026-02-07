@@ -1,3 +1,5 @@
+"""SQLite database wrapper."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -5,15 +7,18 @@ from pathlib import Path
 
 
 class Database:
+    """Lightweight DB helper for connecting and initializing schema."""
     def __init__(self, db_path: Path) -> None:
         self._db_path = db_path
 
     def connect(self) -> sqlite3.Connection:
+        # Row factory allows dict-like access to columns.
         conn = sqlite3.connect(self._db_path)
         conn.row_factory = sqlite3.Row
         return conn
 
     def init(self) -> None:
+        # Create tables if they do not already exist.
         with self.connect() as conn:
             conn.executescript(
                 """

@@ -1,3 +1,5 @@
+"""API routes for receipts and budgets."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -15,6 +17,7 @@ def build_router(
     receipt_service: IReceiptService,
     budget_service: IBudgetService,
 ) -> APIRouter:
+    # Build a router with injected services.
     router = APIRouter()
 
     class BudgetUpsertRequest(BaseModel):
@@ -35,6 +38,7 @@ def build_router(
 
     @router.post("/receipts")
     async def create_receipt(file: UploadFile = File(...)) -> dict[str, Any]:
+        # Validate image content type before processing.
         if not file.content_type or not file.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="Upload an image file")
 
@@ -54,6 +58,7 @@ def build_router(
 
     @router.get("/export")
     def export_csv() -> StreamingResponse:
+        # Stream CSV export directly from service.
         output = receipt_service.export_csv()
         return StreamingResponse(
             output,
