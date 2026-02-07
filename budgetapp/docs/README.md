@@ -1,8 +1,8 @@
 # portfolio
-public portoflio
+Public portfolio
 
 ## Architecture
-See [docs/architecture.md](docs/architecture.md).
+See [architecture.md](architecture.md).
 
 ## Docker
 Build and run the API:
