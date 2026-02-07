@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Receipt Budget Reconciler</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Receipt Budget Reconciler</h1>
+        <p>Upload a receipt, review results, export CSV.</p>
+      </header>
+
+      <section class="card">
+        <h2>Upload Receipt</h2>
+        <form id="upload-form">
+          <input type="file" id="receipt-file" accept="image/*" required />
+          <button type="submit">Upload</button>
+        </form>
+        <div id="upload-status" class="status"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <h2>Receipts</h2>
+          <button id="refresh-receipts">Refresh</button>
+        </div>
+        <ul id="receipts-list"></ul>
+        <a class="button" href="/export">Download CSV</a>
+      </section>
+
+      <section class="card">
+        <h2>Budgets</h2>
+        <form id="budget-form">
+          <input type="text" id="budget-category" placeholder="Category" required />
+          <input type="number" step="0.01" id="budget-limit" placeholder="Monthly limit" required />
+          <input type="number" step="0.01" id="budget-spent" placeholder="Spent" required />
+          <button type="submit">Save</button>
+        </form>
+        <ul id="budgets-list"></ul>
+      </section>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
