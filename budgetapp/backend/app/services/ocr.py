@@ -11,8 +11,8 @@ import pytesseract
 
 class OcrService:
     def extract_text(self, image_path: Path) -> str:
-        image = Image.open(image_path)
-        return pytesseract.image_to_string(image)
+        with Image.open(image_path) as image:
+            return pytesseract.image_to_string(image)
 
 
 @dataclass
@@ -39,6 +39,9 @@ class ReceiptParser:
         return ReceiptParseResult(vendor=vendor, date=date_value, total=total)
 
 
+_DEFAULT_RECEIPT_PARSER = ReceiptParser()
+
+
 def parse_receipt_text(text: str) -> dict[str, Any]:
-    parsed = ReceiptParser().parse(text)
+    parsed = _DEFAULT_RECEIPT_PARSER.parse(text)
     return {"vendor": parsed.vendor, "date": parsed.date, "total": parsed.total}

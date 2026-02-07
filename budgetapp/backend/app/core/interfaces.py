@@ -10,8 +10,14 @@ class IOcrService(Protocol):
         ...
 
 
+class ReceiptParseResult(Protocol):
+    date: str | None
+    vendor: str
+    total: float
+
+
 class IReceiptParser(Protocol):
-    def parse(self, text: str) -> Any:
+    def parse(self, text: str) -> ReceiptParseResult:
         ...
 
 

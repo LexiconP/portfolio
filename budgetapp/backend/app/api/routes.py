@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from pydantic import BaseModel
 
 from ..core.config import AppConfig
 from ..core.interfaces import IBudgetService, IReceiptService
@@ -15,6 +16,11 @@ def build_router(
     budget_service: IBudgetService,
 ) -> APIRouter:
     router = APIRouter()
+
+    class BudgetUpsertRequest(BaseModel):
+        category: str
+        monthly_limit: float = 0
+        spent: float = 0
 
     @router.get("/", response_class=HTMLResponse)
     def root() -> FileResponse:
@@ -60,13 +66,11 @@ def build_router(
         return budget_service.list_budgets()
 
     @router.post("/budgets")
-    def upsert_budget(payload: dict[str, Any]) -> dict[str, Any]:
-        category = payload.get("category")
-        monthly_limit = float(payload.get("monthly_limit", 0))
-        spent = float(payload.get("spent", 0))
-        if not category:
-            raise HTTPException(status_code=400, detail="Category is required")
-
-        return budget_service.upsert_budget(category, monthly_limit, spent)
+    def upsert_budget(payload: BudgetUpsertRequest) -> dict[str, Any]:
+        return budget_service.upsert_budget(
+            payload.category,
+            payload.monthly_limit,
+            payload.spent,
+        )
 
     return router
