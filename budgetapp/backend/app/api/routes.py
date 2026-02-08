@@ -12,6 +12,12 @@ from ..core.config import AppConfig
 from ..core.interfaces import IBudgetService, IReceiptService
 
 
+class BudgetUpsertRequest(BaseModel):
+    category: str
+    monthly_limit: float = 0
+    spent: float = 0
+
+
 def build_router(
     config: AppConfig,
     receipt_service: IReceiptService,
@@ -19,11 +25,6 @@ def build_router(
 ) -> APIRouter:
     # Build a router with injected services.
     router = APIRouter()
-
-    class BudgetUpsertRequest(BaseModel):
-        category: str
-        monthly_limit: float = 0
-        spent: float = 0
 
     @router.get("/", response_class=HTMLResponse)
     def root() -> FileResponse:
