@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from functools import cached_property
 
 from fastapi import FastAPI
@@ -62,7 +63,17 @@ class Container:
 
     def create_app(self) -> FastAPI:
         # Build the FastAPI application and register middleware/routes.
-        app = FastAPI(title="Receipt OCR Budget Reconciliation API")
+        @asynccontextmanager
+        async def lifespan(_: FastAPI):
+            # Ensure directories and schema are ready before requests.
+            self.config.ensure_directories()
+            self.db.init()
+            yield
+
+        app = FastAPI(
+            title="Receipt OCR Budget Reconciliation API",
+            lifespan=lifespan,
+        )
 
         app.add_middleware(
             CORSMiddleware,
@@ -71,12 +82,6 @@ class Container:
             allow_methods=["*"],
             allow_headers=["*"],
         )
-
-        @app.on_event("startup")
-        def on_startup() -> None:
-            # Ensure directories and schema are ready before requests.
-            self.config.ensure_directories()
-            self.db.init()
 
         app.include_router(
             build_router(self.config, self.receipt_service, self.budget_service)
