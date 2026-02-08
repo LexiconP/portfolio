@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -16,6 +17,7 @@ class BudgetUpsertRequest(BaseModel):
     category: str
     monthly_limit: float = 0
     spent: float = 0
+    prior_balance: float = 0
 
 
 def build_router(
@@ -77,6 +79,22 @@ def build_router(
             payload.category,
             payload.monthly_limit,
             payload.spent,
+            payload.prior_balance,
         )
+
+    @router.post("/budgets/upload")
+    async def upload_budgets(file: UploadFile = File(...)) -> dict[str, Any]:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Upload a CSV or Excel file")
+
+        suffix = Path(file.filename).suffix.lower()
+        if suffix not in {".csv", ".xlsx", ".xls"}:
+            raise HTTPException(status_code=400, detail="Upload a CSV or Excel file")
+
+        contents = await file.read()
+        try:
+            return budget_service.import_budgets(file.filename, contents)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return router

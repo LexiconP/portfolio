@@ -16,22 +16,32 @@ class BudgetRepository(IBudgetRepository):
     def list_budgets(self) -> list[dict[str, Any]]:
         with self._db.connect() as conn:
             rows = conn.execute(
-                "SELECT id, category, monthly_limit, spent FROM budgets ORDER BY category"
+                "SELECT id, category, monthly_limit, spent, prior_balance FROM budgets ORDER BY category"
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def upsert_budget(self, category: str, monthly_limit: float, spent: float) -> dict[str, Any]:
+    def upsert_budget(
+        self,
+        category: str,
+        monthly_limit: float,
+        spent: float,
+        prior_balance: float = 0,
+    ) -> dict[str, Any]:
         with self._db.connect() as conn:
             conn.execute(
                 """
-                INSERT INTO budgets (category, monthly_limit, spent)
-                VALUES (?, ?, ?)
-                ON CONFLICT(category) DO UPDATE SET monthly_limit=excluded.monthly_limit, spent=excluded.spent
+                INSERT INTO budgets (category, monthly_limit, spent, prior_balance)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(category) DO UPDATE SET
+                    monthly_limit=excluded.monthly_limit,
+                    spent=excluded.spent,
+                    prior_balance=excluded.prior_balance
                 """,
-                (category, monthly_limit, spent),
+                (category, monthly_limit, spent, prior_balance),
             )
         return {
             "category": category,
             "monthly_limit": monthly_limit,
             "spent": spent,
+            "prior_balance": prior_balance,
         }

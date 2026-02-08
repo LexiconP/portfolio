@@ -36,7 +36,26 @@ class Database:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     category TEXT UNIQUE,
                     monthly_limit REAL DEFAULT 0,
-                    spent REAL DEFAULT 0
+                    spent REAL DEFAULT 0,
+                    prior_balance REAL DEFAULT 0
                 );
                 """
+            )
+            self._ensure_column(conn, "budgets", "prior_balance", "REAL", "0")
+
+    def _ensure_column(
+        self,
+        conn: sqlite3.Connection,
+        table: str,
+        column: str,
+        column_type: str,
+        default_value: str,
+    ) -> None:
+        columns = {
+            row["name"]
+            for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+        if column not in columns:
+            conn.execute(
+                f"ALTER TABLE {table} ADD COLUMN {column} {column_type} DEFAULT {default_value}"
             )
