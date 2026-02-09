@@ -47,7 +47,13 @@ class IBudgetRepository(Protocol):
     def list_budgets(self) -> list[dict[str, Any]]:
         ...
 
-    def upsert_budget(self, category: str, monthly_limit: float, spent: float) -> dict[str, Any]:
+    def upsert_budget(
+        self,
+        category: str,
+        monthly_limit: float,
+        spent: float,
+        prior_balance: float = 0,
+    ) -> dict[str, Any]:
         ...
 
 
@@ -69,5 +75,14 @@ class IBudgetService(Protocol):
     def list_budgets(self) -> list[dict[str, Any]]:
         ...
 
-    def upsert_budget(self, category: str, monthly_limit: float, spent: float) -> dict[str, Any]:
+    def upsert_budget(
+        self,
+        category: str,
+        monthly_limit: float,
+        spent: float,
+        prior_balance: float = 0,
+    ) -> dict[str, Any]:
+        ...
+
+    def import_budgets(self, filename: str, contents: bytes) -> dict[str, Any]:
         ...

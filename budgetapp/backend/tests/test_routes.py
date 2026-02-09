@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from io import StringIO
+from dataclasses import dataclass, field
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import pandas as pd
 
 from app.api.routes import build_router
 from app.core.config import AppConfig
+from app.services.budgets import BudgetService
 
 
 @dataclass
@@ -42,14 +44,53 @@ class DummyReceiptService:
 @dataclass
 class DummyBudgetService:
     list_data: list[dict[str, Any]] | None = None
-    last_args: tuple[str, float, float] | None = None
+    last_args: tuple[str, float, float, float] | None = None
+    last_import: tuple[str, bytes] | None = None
 
     def list_budgets(self) -> list[dict[str, Any]]:
         return self.list_data or []
 
-    def upsert_budget(self, category: str, monthly_limit: float, spent: float) -> dict[str, Any]:
-        self.last_args = (category, monthly_limit, spent)
-        return {"category": category, "monthly_limit": monthly_limit, "spent": spent}
+    def upsert_budget(
+        self,
+        category: str,
+        monthly_limit: float,
+        spent: float,
+        prior_balance: float = 0,
+    ) -> dict[str, Any]:
+        self.last_args = (category, monthly_limit, spent, prior_balance)
+        return {
+            "category": category,
+            "monthly_limit": monthly_limit,
+            "spent": spent,
+            "prior_balance": prior_balance,
+        }
+
+    def import_budgets(self, filename: str, contents: bytes) -> dict[str, Any]:
+        self.last_import = (filename, contents)
+        return {"imported": 1}
+
+
+@dataclass
+class RecordingBudgetRepository:
+    upserted: list[tuple[str, float, float, float]] = field(default_factory=list)
+
+    def list_budgets(self) -> list[dict[str, Any]]:
+        return []
+
+    def upsert_budget(
+        self,
+        category: str,
+        monthly_limit: float,
+        spent: float,
+        prior_balance: float = 0,
+    ) -> dict[str, Any]:
+        self.upserted.append((category, monthly_limit, spent, prior_balance))
+        return {
+            "category": category,
+            "monthly_limit": monthly_limit,
+            "spent": spent,
+            "prior_balance": prior_balance,
+        }
 
 
 def build_app(tmp_path: Path, receipt_service: DummyReceiptService, budget_service: DummyBudgetService) -> TestClient:
@@ -161,9 +202,89 @@ def test_list_and_upsert_budgets(tmp_path: Path) -> None:
 
     upsert_response = client.post(
         "/budgets",
-        json={"category": "Travel", "monthly_limit": 500.0, "spent": 125.0},
+        json={
+            "category": "Travel",
+            "monthly_limit": 500.0,
+            "spent": 125.0,
+            "prior_balance": 75.0,
+        },
     )
 
     assert upsert_response.status_code == 200
-    assert budget_service.last_args == ("Travel", 500.0, 125.0)
+    assert budget_service.last_args == ("Travel", 500.0, 125.0, 75.0)
     assert upsert_response.json()["category"] == "Travel"
+
+
+def test_upload_budgets(tmp_path: Path) -> None:
+    budget_service = DummyBudgetService()
+    client = build_app(tmp_path, DummyReceiptService(), budget_service)
+
+    response = client.post(
+        "/budgets/upload",
+        files={"file": ("budgets.csv", b"category,monthly_limit\nFood,100", "text/csv")},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"imported": 1}
+    assert budget_service.last_import is not None
+
+
+def test_upload_budgets_rejects_unsupported_extension(tmp_path: Path) -> None:
+    budget_service = DummyBudgetService()
+    client = build_app(tmp_path, DummyReceiptService(), budget_service)
+
+    response = client.post(
+        "/budgets/upload",
+        files={"file": ("budgets.txt", b"data", "text/plain")},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Upload a CSV or Excel file"
+
+
+def test_upload_budgets_missing_category_returns_400(tmp_path: Path) -> None:
+    repository = RecordingBudgetRepository()
+    budget_service = BudgetService(repository=repository)
+    client = build_app(tmp_path, DummyReceiptService(), budget_service)
+
+    response = client.post(
+        "/budgets/upload",
+        files={"file": ("budgets.csv", b"monthly_limit,spent\n100,50", "text/csv")},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Missing required 'category' column"
+
+
+def test_upload_budgets_accepts_xlsx(tmp_path: Path) -> None:
+    repository = RecordingBudgetRepository()
+    budget_service = BudgetService(repository=repository)
+    client = build_app(tmp_path, DummyReceiptService(), budget_service)
+
+    frame = pd.DataFrame(
+        [
+            {"category": "Food", "monthly_limit": 300, "spent": 120, "prior_balance": 25},
+            {"category": "Travel", "monthly_limit": 800, "spent": 250, "prior_balance": 0},
+        ]
+    )
+    buffer = BytesIO()
+    frame.to_excel(buffer, index=False)
+    buffer.seek(0)
+
+    response = client.post(
+        "/budgets/upload",
+        files={
+            "file": (
+                "budgets.xlsx",
+                buffer.read(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"imported": 2}
+    assert repository.upserted == [
+        ("Food", 300.0, 120.0, 25.0),
+        ("Travel", 800.0, 250.0, 0.0),
+    ]

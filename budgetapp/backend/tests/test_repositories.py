@@ -53,12 +53,13 @@ def test_budget_repository_upsert_and_list(tmp_path: Path) -> None:
     db = build_db(tmp_path)
     repository = BudgetRepository(db)
 
-    repository.upsert_budget("Food", 200.0, 75.0)
-    repository.upsert_budget("Travel", 500.0, 125.0)
-    repository.upsert_budget("Food", 250.0, 90.0)
+    repository.upsert_budget("Food", 200.0, 75.0, 10.0)
+    repository.upsert_budget("Travel", 500.0, 125.0, 5.0)
+    repository.upsert_budget("Food", 250.0, 90.0, 15.0)
 
     rows = repository.list_budgets()
 
     assert [row["category"] for row in rows] == ["Food", "Travel"]
     assert rows[0]["monthly_limit"] == 250.0
     assert rows[0]["spent"] == 90.0
+    assert rows[0]["prior_balance"] == 15.0
