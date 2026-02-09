@@ -34,7 +34,7 @@ class BudgetService:
 
         if suffix == ".csv":
             frame = pd.read_csv(data)
-        elif suffix in {".xlsx", ".xls"}:
+        elif suffix == ".xlsx":
             frame = pd.read_excel(data)
         else:
             raise ValueError("Unsupported file type")

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from pathlib import Path
 
 
 class Database:
     """Lightweight DB helper for connecting and initializing schema."""
+    _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
     def __init__(self, db_path: Path) -> None:
         self._db_path = db_path
 
@@ -51,11 +53,24 @@ class Database:
         column_type: str,
         default_value: str,
     ) -> None:
+        self._assert_identifier(table, "table")
+        self._assert_identifier(column, "column")
         columns = {
             row["name"]
-            for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+            for row in conn.execute(f"PRAGMA table_info({self._quote_identifier(table)})").fetchall()
         }
         if column not in columns:
             conn.execute(
-                f"ALTER TABLE {table} ADD COLUMN {column} {column_type} DEFAULT {default_value}"
+                "ALTER TABLE "
+                + self._quote_identifier(table)
+                + " ADD COLUMN "
+                + self._quote_identifier(column)
+                + f" {column_type} DEFAULT {default_value}"
             )
+
+    def _assert_identifier(self, value: str, label: str) -> None:
+        if not self._IDENTIFIER_RE.match(value):
+            raise ValueError(f"Invalid {label} identifier: {value}")
+
+    def _quote_identifier(self, value: str) -> str:
+        return f'"{value}"'

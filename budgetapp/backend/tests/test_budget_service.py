@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.services.budgets import BudgetService
 
@@ -8,11 +8,7 @@ from app.services.budgets import BudgetService
 @dataclass
 class RecordingBudgetRepository:
     last_args: tuple[str, float, float, float] | None = None
-    upserted: list[tuple[str, float, float, float]] = None
-
-    def __post_init__(self) -> None:
-        if self.upserted is None:
-            self.upserted = []
+    upserted: list[tuple[str, float, float, float]] = field(default_factory=list)
 
     def list_budgets(self) -> list[dict]:
         return [{"category": "Food", "monthly_limit": 200.0, "spent": 50.0, "prior_balance": 25.0}]
